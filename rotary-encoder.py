@@ -1,28 +1,24 @@
-from RPi import GPIO
-from time import sleep
+from gpiozero import RotaryEncoder
+from signal import pause
 
-clk = 6
-dt = 5
+# Define the pins used for the rotary encoder
+encoder = RotaryEncoder(6, 5, max_steps=0)
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(clk, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(dt, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+# The encoder has 20 steps per 360-degree rotation
+STEPS_PER_ROTATION = 20
 
-counter = 0
-clkLastState = GPIO.input(clk)
+def get_angle():
+# Calculate and return the current angle on a 360-degree scale.
+    return (encoder.steps % STEPS_PER_ROTATION) * (360 / STEPS_PER_ROTATION)
 
-try:
+def display_value():
+# Display the current value in degrees.
+    angle = get_angle()
+    print(f"Current Angle: {angle:.2f}°")
 
-        while True:
-                clkState = GPIO.input(clk)
-                dtState = GPIO.input(dt)
-                if clkState != clkLastState:
-                        if dtState != clkState:
-                                counter += 1
-                        else:
-                                counter -= 1
-                        print counter
-                clkLastState = clkState
-                sleep(0.01)
-finally:
-        GPIO.cleanup()
+# Set the callback to the function to be executed when rotated
+encoder.when_rotated = display_value
+
+display_value()
+
+pause()
