@@ -1,12 +1,19 @@
 import serial
 import threading
+import time
 
 def read_from_serial(ser):
+    system_ready = False  # Flag to check if system is ready
     try:
         while True:
             if ser.in_waiting > 0:
                 line = ser.readline().decode('utf-8').rstrip()
-                print("Arduino:", line)
+                if "System ready" in line:
+                    print("Arduino:", line)
+                    system_ready = True  # Set the flag when "System ready" is received
+                elif system_ready:
+                    # Only print other messages after the system is ready
+                    print("Arduino:", line)
     except KeyboardInterrupt:
         print("Exiting program.")
     except Exception as e:
