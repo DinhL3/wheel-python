@@ -1,6 +1,7 @@
 import serial
 import asyncio
 import websockets
+import re
 
 # Global variable to store WebSocket connections
 clients = set()
@@ -18,39 +19,48 @@ async def read_from_serial(ser):
                 elif system_ready:
                     # Only send other messages after the system is ready
                     print("Arduino:", line)
-                    await notify_clients(line)
+                    # Extract the number from the message
+                    number = extract_number_from_message(line)
+                    if number is not None:
+                        await notify_clients(number)
             await asyncio.sleep(0.1)  # Add a small sleep to prevent high CPU usage
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
         ser.close()
 
+def extract_number_from_message(message):
+    # Using regex to extract the number
+    match = re.search(r'\d+', message)
+    return match.group(0) if match else None
+
 async def notify_clients(message):
     if clients:
-        await asyncio.wait([client.send(message) for client in clients])
+        await asyncio.gather(*[client.send(message) for client in clients])
 
-async def websocket_handler(websocket, path):
-    # Register the client
+async def handle_client(websocket, path):
+    # Register client
     clients.add(websocket)
     try:
         async for message in websocket:
-            # Handle incoming messages from the client if needed
+            # For now, we are not handling any incoming messages from clients
             pass
     finally:
-        # Unregister the client
+        # Unregister client
         clients.remove(websocket)
 
 async def main():
     # Initialize the serial connection
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+    # Change this to the port of your Arduino
+    ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
     ser.flush()
 
     # Start the serial reading task
     serial_task = asyncio.create_task(read_from_serial(ser))
 
     # Start the WebSocket server
-    async with websockets.serve(websocket_handler, "0.0.0.0", 8765):
-        await serial_task  # Keep the program running by awaiting the serial task
+    async with websockets.serve(handle_client, "0.0.0.0", 8765):
+        await serial_task  # Run the serial task indefinitely
 
 if __name__ == "__main__":
     try:
