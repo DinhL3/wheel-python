@@ -1,2 +1,1 @@
-# wheel-python
-# wheel-python
+# Wheel of fortune: code for receiving data from Arduino and send to frontend via Websocket

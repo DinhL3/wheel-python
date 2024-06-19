@@ -39,17 +39,21 @@ async def notify_clients(message):
         await asyncio.gather(*[client.send(message) for client in clients])
 
 async def handle_client(websocket, path):
+    global ser  # Declare ser as global to send reset command
     # Register client
     clients.add(websocket)
     try:
         async for message in websocket:
-            # For now, we are not handling any incoming messages from clients
-            pass
+            if message == "reset":
+                print("Received reset command from client")
+                ser.write(b'reset\n')  # Send reset command to Arduino
+            # For now, we are not handling any other incoming messages from clients
     finally:
         # Unregister client
         clients.remove(websocket)
 
 async def main():
+    global ser  # Declare ser as global to use it in handle_client
     # Initialize the serial connection
     # Change this to the port of your Arduino
     ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
